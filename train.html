@@ -1,0 +1,2393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElevateX - AI Railway Control System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary-bg: #f1f5f9;
+            --secondary-bg: #ffffff;
+            --sidebar-bg: #0f172a;
+            --sidebar-text: #94a3b8;
+            --sidebar-active-bg: #1e293b;
+            --sidebar-active-text: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --accent-blue: #2563eb;
+            --accent-green: #16a34a;
+            --accent-yellow: #f59e0b;
+            --accent-red: #dc2626;
+            --border-color: #e2e8f0;
+        }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .train { transition: transform 2s linear; }
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+        }
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+        }
+        .trend-up { color: #16a34a; }
+        .trend-down { color: #dc2626; }
+    </style>
+</head>
+<body class="bg-[var(--primary-bg)] font-sans">
+
+    <div id="login-page" class="flex items-center justify-center min-h-screen bg-gray-100 fade-in">
+        <div class="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-lg">
+            <div class="text-center">
+                 <div class="flex justify-center mb-4">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--accent-blue)]"><path d="M10 10h.01"/><path d="M14 10h.01"/><path d="M18 10h.01"/><path d="M6 10h.01"/><path d="M5 20h14"/><path d="M4 15h16"/><path d="M4 15L2 9h20l-2 6"/><path d="M12 4v6"/></svg>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900">ElevateX</h1>
+                <p class="mt-2 text-sm text-gray-600">AI-Powered Traffic Control System</p>
+            </div>
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="username" class="text-sm font-medium text-gray-700">Controller Username</label>
+                    <input id="username" name="username" type="text" autocomplete="username" required value="ControllerDemo" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="password" class="text-sm font-medium text-gray-700">Security Password</label>
+                    <input id="password" name="password" type="password" value="password" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[var(--accent-blue)] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                        Access Control Center
+                    </button>
+                </div>
+                 <div class="text-center text-xs text-gray-500">
+                    <p class="flex items-center justify-center"><i data-lucide="lock" class="w-4 h-4 text-green-500 mr-1"></i> System Online & Secure</p>
+                    <p>Authorized Railway Personnel Only. ElevateX v3.0</p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="app" class="hidden h-screen w-full lg:grid lg:grid-cols-[280px_1fr]">
+        <!-- Sidebar -->
+        <div class="flex h-full max-h-screen flex-col gap-2 bg-[var(--sidebar-bg)] text-[var(--sidebar-text)]">
+            <div class="flex h-16 items-center border-b border-gray-700 px-6">
+                 <a href="#" class="flex items-center gap-2 font-semibold text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M10 10h.01"/><path d="M14 10h.01"/><path d="M18 10h.01"/><path d="M6 10h.01"/><path d="M5 20h14"/><path d="M4 15h16"/><path d="M4 15L2 9h20l-2 6"/><path d="M12 4v6"/></svg>
+                    <span>ElevateX</span>
+                </a>
+            </div>
+            <div class="flex-1 overflow-auto py-2">
+                <nav class="grid items-start px-4 text-sm font-medium">
+                    <a href="#control-center" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2 transition-all" data-roles="Controller,Supervisor,Analyst"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Control Center</a>
+                    <a href="#section-control" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2 transition-all" data-roles="Controller,Supervisor"><i data-lucide="git-commit-vertical" class="w-4 h-4"></i> Section Control</a>
+                    <a href="#operations-hub" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2 transition-all" data-roles="Controller,Supervisor"><i data-lucide="bot" class="w-4 h-4"></i> AI Recommendations</a>
+                    <a href="#what-if-analysis" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2 transition-all" data-roles="Supervisor,Analyst"><i data-lucide="lightbulb" class="w-4 h-4"></i> Scenario Lab</a>
+                    <a href="#alerts" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2 transition-all relative" data-roles="Controller,Supervisor"><i data-lucide="siren" class="w-4 h-4"></i> Alerts & Notifications<span class="absolute top-2 right-2 flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span></a>
+                    <a href="#timetable" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2 transition-all" data-roles="Controller,Supervisor"><i data-lucide="calendar" class="w-4 h-4"></i> Timetable Planner</a>
+                    <a href="#reports" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2 transition-all" data-roles="Supervisor,Analyst"><i data-lucide="book-check" class="w-4 h-4"></i> Performance & KPIs</a>
+                    <a href="#audit" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2 transition-all" data-roles="Supervisor"><i data-lucide="history" class="w-4 h-4"></i> Audit & Logs</a>
+                    <a href="#admin" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2 transition-all" data-roles="Supervisor"><i data-lucide="user-cog" class="w-4 h-4"></i> Admin</a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex flex-col h-screen">
+            <header class="flex h-16 shrink-0 items-center gap-4 border-b bg-[var(--secondary-bg)] px-6">
+                <div id="breadcrumb" class="text-sm text-gray-500"></div>
+                <div class="flex items-center gap-4 ml-auto">
+                    <div class="flex items-center gap-2 text-sm">
+                        <span id="user-role" class="font-semibold text-gray-700">Controller</span>
+                        <select id="role-switcher" class="text-sm border-gray-300 rounded-md">
+                            <option value="Controller">Controller</option>
+                            <option value="Supervisor">Supervisor</option>
+                            <option value="Analyst">Analyst</option>
+                        </select>
+                    </div>
+                    <button id="manual-override-btn" class="flex items-center gap-2 p-2 rounded-md bg-amber-100 text-amber-800 hover:bg-amber-200 text-sm font-semibold"><i data-lucide="user-cog" class="w-4 h-4"></i><span>Manual Override</span></button>
+                    <button class="p-2 rounded-full hover:bg-gray-100 relative"><i data-lucide="bell" class="w-5 h-5"></i><span class="absolute top-1 right-1 flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span></button>
+                    <img src="https://i.pravatar.cc/40?u=railcontroller" alt="User" class="w-10 h-10 rounded-full">
+                    <button id="logout-btn" class="flex items-center gap-2 p-2 rounded-md hover:bg-gray-100 text-sm"><i data-lucide="log-out" class="w-4 h-4"></i><span>Logout</span></button>
+                </div>
+            </header>
+            <main class="flex-1 overflow-y-auto p-6 space-y-6">
+                
+                <div id="control-center" class="page fade-in">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 space-y-6">
+                            <div class="flex justify-between items-center">
+                                <h1 class="text-3xl font-bold text-[var(--text-primary)]">Dashboard</h1>
+                                 <div class="text-right p-2 bg-green-100 rounded-lg">
+                                     <div class="text-lg font-semibold text-green-700" id="system-efficiency">87% System Efficiency</div>
+                                     <p class="text-xs text-gray-500">Real-time: <span id="current-time"></span></p>
+                                 </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-red-500">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="font-semibold text-gray-500 text-sm">Active Incidents</h3>
+                                            <p class="text-3xl font-bold text-red-500" id="active-incidents">3</p>
+                                            <p class="text-xs text-gray-500 mt-1">2 Critical, 1 High Priority</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-amber-500">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="font-semibold text-gray-500 text-sm">Average Delay</h3>
+                                            <p class="text-3xl font-bold flex items-center" id="avg-delay">4.2 <span class="text-lg ml-1">min</span></p>
+                                            <p class="text-xs text-gray-500 mt-1 flex items-center">
+                                                <i data-lucide="trending-down" class="w-3 h-3 trend-down mr-1"></i>
+                                                -12% from yesterday
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-green-500">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="font-semibold text-gray-500 text-sm">Throughput</h3>
+                                            <p class="text-3xl font-bold" id="throughput">48 <span class="text-lg">trains/hr</span></p>
+                                            <p class="text-xs text-gray-500 mt-1">Peak: 52 trains/hr at 6:30 PM</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-blue-500">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="font-semibold text-gray-500 text-sm">AI Recommendations</h3>
+                                            <p class="text-3xl font-bold text-blue-500" id="pending-recs">2</p>
+                                            <p class="text-xs text-gray-500 mt-1">1 High Priority, 1 Medium</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+                                <div class="bg-white p-4 rounded-2xl shadow-sm">
+                                    <h3 class="font-semibold text-gray-500 text-sm">Punctuality Rate</h3>
+                                    <p class="text-3xl font-bold text-green-500" id="punctuality-rate">92.3%</p>
+                                    <p class="text-xs text-gray-500 mt-1">Target: 95%</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-2xl shadow-sm">
+                                    <h3 class="font-semibold text-gray-500 text-sm">Platform Utilization</h3>
+                                    <p class="text-3xl font-bold text-purple-500" id="platform-util">78%</p>
+                                    <p class="text-xs text-gray-500 mt-1">12 platforms active</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-2xl shadow-sm">
+                                    <h3 class="font-semibold text-gray-500 text-sm">Energy Efficiency</h3>
+                                    <p class="text-3xl font-bold text-emerald-500" id="energy-eff">87%</p>
+                                    <p class="text-xs text-gray-500 mt-1">Green operations</p>
+                                </div>
+                                <div class="bg-white p-4 rounded-2xl shadow-sm">
+                                    <h3 class="font-semibold text-gray-500 text-sm">Passenger Satisfaction</h3>
+                                    <p class="text-3xl font-bold text-indigo-500" id="passenger-sat">4.2</p>
+                                    <p class="text-xs text-gray-500 mt-1">Out of 5.0 rating</p>
+                                </div>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="map" class="w-5 h-5"></i>Section Schematic - Delhi-Ghaziabad Corridor
+                                </h3>
+                                <div class="relative w-full h-80 bg-gray-100 rounded-lg p-4 overflow-hidden" id="dashboard-schematic">
+                                    <!-- Enhanced schematic with more railway-specific details -->
+                                </div>
+                                <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                        <span>On Time (12 trains)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 bg-amber-500 rounded-full"></div>
+                                        <span>Delayed (3 trains)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                        <span>Stopped (1 train)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                        <span>Freight (2 trains)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Compact Active Trains -->
+                            <div class="bg-white p-4 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-3 text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="list" class="w-4 h-4"></i>Active Trains
+                                </h3>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="p-3 bg-green-50 rounded-lg">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-semibold text-sm">12001</span>
+                                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                        </div>
+                                        <div class="text-xs text-gray-600">Delhi-Mumbai • On Time</div>
+                                    </div>
+                                    <div class="p-3 bg-amber-50 rounded-lg">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-semibold text-sm">12002</span>
+                                            <span class="w-2 h-2 bg-amber-500 rounded-full"></span>
+                                        </div>
+                                        <div class="text-xs text-gray-600">Delhi-Ahmedabad • Delayed</div>
+                                    </div>
+                                    <div class="p-3 bg-red-50 rounded-lg">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-semibold text-sm">12345</span>
+                                            <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                                        </div>
+                                        <div class="text-xs text-gray-600">Local • Stopped</div>
+                                    </div>
+                                    <div class="p-3 bg-blue-50 rounded-lg">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-semibold text-sm">F001</span>
+                                            <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                        </div>
+                                        <div class="text-xs text-gray-600">Freight • On Schedule</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Weather & Conditions Panel -->
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="cloud" class="w-5 h-5"></i>Weather & Operational Conditions
+                                </h3>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="bg-blue-50 p-4 rounded-lg">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <i data-lucide="thermometer" class="w-4 h-4 text-blue-600"></i>
+                                            <span class="font-semibold text-sm">Temperature</span>
+                                        </div>
+                                        <p class="text-2xl font-bold text-blue-600">28°C</p>
+                                        <p class="text-xs text-gray-500">Normal operating range</p>
+                                    </div>
+                                    <div class="bg-amber-50 p-4 rounded-lg">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <i data-lucide="eye" class="w-4 h-4 text-amber-600"></i>
+                                            <span class="font-semibold text-sm">Visibility</span>
+                                        </div>
+                                        <p class="text-2xl font-bold text-amber-600">50m</p>
+                                        <p class="text-xs text-gray-500">Fog alert active</p>
+                                    </div>
+                                    <div class="bg-green-50 p-4 rounded-lg">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <i data-lucide="wind" class="w-4 h-4 text-green-600"></i>
+                                            <span class="font-semibold text-sm">Wind Speed</span>
+                                        </div>
+                                        <p class="text-2xl font-bold text-green-600">12 km/h</p>
+                                        <p class="text-xs text-gray-500">No restrictions</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4 p-3 bg-amber-50 rounded-lg">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600"></i>
+                                        <span class="font-semibold text-sm text-amber-800">Active Weather Advisory</span>
+                                    </div>
+                                    <p class="text-sm text-amber-700">Dense fog conditions in Delhi-Ghaziabad section. Speed restrictions of 30 km/h in effect. Expected to clear by 4:00 PM.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm">
+                            <h3 class="text-xl font-semibold mb-4 text-gray-700">Alerts & Notifications</h3>
+                            <div id="dashboard-alerts" class="space-y-4"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="operations-hub" class="page hidden fade-in">
+                    <h1 class="text-2xl font-bold mb-4">AI Recommendations</h1>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="recommendations-container"></div>
+                </div>
+                
+                 <div id="section-control" class="page hidden fade-in">
+                    <h1 class="text-2xl font-bold mb-4">Section Control: Delhi-Ghaziabad Corridor</h1>
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <!-- Train List Panel (Left Column) -->
+                        <div class="bg-white p-6 rounded-2xl shadow-sm">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                                <i data-lucide="list" class="w-5 h-5"></i>Active Trains
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="font-semibold text-sm">12001 - Rajdhani</span>
+                                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">On Time</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        <div>ETA: 2:45 PM | Priority: High</div>
+                                        <div>Current: Km 15.2 | Speed: 85 km/h</div>
+                                    </div>
+                                </div>
+                                <div class="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="font-semibold text-sm">12002 - Shatabdi</span>
+                                        <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">Delayed</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        <div>ETA: 3:15 PM | Priority: High</div>
+                                        <div>Current: Km 8.5 | Speed: 92 km/h</div>
+                                    </div>
+                                </div>
+                                <div class="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="font-semibold text-sm">12345 - Local</span>
+                                        <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Stopped</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        <div>ETA: Delayed | Priority: Medium</div>
+                                        <div>Current: Delhi Central | Speed: 0 km/h</div>
+                                    </div>
+                                </div>
+                                <div class="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="font-semibold text-sm">F001 - Freight</span>
+                                        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">On Schedule</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        <div>ETA: 4:30 PM | Priority: Low</div>
+                                        <div>Current: Km 25.3 | Speed: 65 km/h</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Compact Timeline & Additional Functionalities -->
+                        <div class="lg:col-span-2 space-y-4">
+                            <!-- Compact Timeline -->
+                            <div class="bg-white p-4 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-3 text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="timeline" class="w-4 h-4"></i>Movement Timeline
+                                </h3>
+                                <div class="space-y-2">
+                                    <div class="flex items-center gap-3 text-sm">
+                                        <div class="w-12 text-xs font-semibold">12001</div>
+                                        <div class="flex-1 bg-green-200 h-4 rounded flex items-center px-2">
+                                            <span class="text-xs">Delhi → Ghaziabad → Meerut</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-sm">
+                                        <div class="w-12 text-xs font-semibold">12002</div>
+                                        <div class="flex-1 bg-amber-200 h-4 rounded flex items-center px-2">
+                                            <span class="text-xs">Delayed at Delhi</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-sm">
+                                        <div class="w-12 text-xs font-semibold">12345</div>
+                                        <div class="flex-1 bg-red-200 h-4 rounded flex items-center px-2">
+                                            <span class="text-xs">Stopped at Delhi Central</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Signal Control Panel -->
+                            <div class="bg-white p-4 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-3 text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="zap" class="w-4 h-4"></i>Signal Control
+                                </h3>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="p-3 bg-green-50 rounded-lg">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="font-semibold text-sm">Signal A</span>
+                                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                        </div>
+                                        <button class="w-full text-xs bg-green-600 text-white py-1 rounded hover:bg-green-700">Clear</button>
+                                    </div>
+                                    <div class="p-3 bg-red-50 rounded-lg">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="font-semibold text-sm">Signal B</span>
+                                            <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                        </div>
+                                        <button class="w-full text-xs bg-red-600 text-white py-1 rounded hover:bg-red-700">Stop</button>
+                                    </div>
+                                    <div class="p-3 bg-amber-50 rounded-lg">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="font-semibold text-sm">Signal C</span>
+                                            <div class="w-3 h-3 bg-amber-500 rounded-full"></div>
+                                        </div>
+                                        <button class="w-full text-xs bg-amber-600 text-white py-1 rounded hover:bg-amber-700">Caution</button>
+                                    </div>
+                                    <div class="p-3 bg-green-50 rounded-lg">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="font-semibold text-sm">Signal D</span>
+                                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                        </div>
+                                        <button class="w-full text-xs bg-green-600 text-white py-1 rounded hover:bg-green-700">Clear</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Platform Status -->
+                            <div class="bg-white p-4 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-3 text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="layers" class="w-4 h-4"></i>Platform Status
+                                </h3>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="p-3 bg-green-50 rounded-lg">
+                                        <div class="font-semibold text-green-800 text-sm">Platform 1</div>
+                                        <div class="text-green-600 text-xs">12001 Active</div>
+                                        <div class="text-green-600 text-xs">ETA: 2:45 PM</div>
+                                    </div>
+                                    <div class="p-3 bg-amber-50 rounded-lg">
+                                        <div class="font-semibold text-amber-800 text-sm">Platform 2</div>
+                                        <div class="text-amber-600 text-xs">12002 Delayed</div>
+                                        <div class="text-amber-600 text-xs">ETA: 3:15 PM</div>
+                                    </div>
+                                    <div class="p-3 bg-red-50 rounded-lg">
+                                        <div class="font-semibold text-red-800 text-sm">Platform 3</div>
+                                        <div class="text-red-600 text-xs">12345 Stopped</div>
+                                        <div class="text-red-600 text-xs">Status: Available</div>
+                                    </div>
+                                    <div class="p-3 bg-gray-50 rounded-lg">
+                                        <div class="font-semibold text-gray-800 text-sm">Freight Yard</div>
+                                        <div class="text-gray-600 text-xs">F001 Scheduled</div>
+                                        <div class="text-gray-600 text-xs">ETA: 4:30 PM</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Emergency Controls -->
+                            <div class="bg-white p-4 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-3 text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="alert-triangle" class="w-4 h-4"></i>Emergency Controls
+                                </h3>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button class="p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                                        <div class="flex items-center gap-2">
+                                            <i data-lucide="square" class="w-4 h-4 text-red-600"></i>
+                                            <span class="font-semibold text-red-800 text-sm">Emergency Stop</span>
+                                        </div>
+                                        <div class="text-red-600 text-xs mt-1">Stop all trains</div>
+                                    </button>
+                                    <button class="p-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors">
+                                        <div class="flex items-center gap-2">
+                                            <i data-lucide="phone" class="w-4 h-4 text-amber-600"></i>
+                                            <span class="font-semibold text-amber-800 text-sm">Emergency Call</span>
+                                        </div>
+                                        <div class="text-amber-600 text-xs mt-1">Contact control</div>
+                                    </button>
+                                    <button class="p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                                        <div class="flex items-center gap-2">
+                                            <i data-lucide="radio" class="w-4 h-4 text-blue-600"></i>
+                                            <span class="font-semibold text-blue-800 text-sm">Radio Alert</span>
+                                        </div>
+                                        <div class="text-blue-600 text-xs mt-1">Broadcast message</div>
+                                    </button>
+                                    <button class="p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                                        <div class="flex items-center gap-2">
+                                            <i data-lucide="shield" class="w-4 h-4 text-purple-600"></i>
+                                            <span class="font-semibold text-purple-800 text-sm">Safety Override</span>
+                                        </div>
+                                        <div class="text-purple-600 text-xs mt-1">Override safety</div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Command & Recommendations Panel (Right) -->
+                         <div class="space-y-6">
+                            <div class="bg-white p-4 rounded-2xl shadow-sm">
+                                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                                    <i data-lucide="brain" class="w-4 h-4"></i>AI Recommendations
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="p-3 bg-blue-50 rounded-lg">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <span class="font-semibold text-sm">Reroute 12002</span>
+                                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">94% Conf.</span>
+                                </div>
+                                        <p class="text-xs text-gray-600">Switch to Track 2 to avoid congestion</p>
+                                        <div class="flex gap-2 mt-2">
+                                            <button class="text-xs bg-green-500 text-white px-2 py-1 rounded">Accept</button>
+                                            <button class="text-xs bg-gray-500 text-white px-2 py-1 rounded">Reject</button>
+                            </div>
+                                    </div>
+                                    <div class="p-3 bg-amber-50 rounded-lg">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <span class="font-semibold text-sm">Hold 12345</span>
+                                            <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded">88% Conf.</span>
+                                        </div>
+                                        <p class="text-xs text-gray-600">Wait for platform clearance at Delhi Central</p>
+                                        <div class="flex gap-2 mt-2">
+                                            <button class="text-xs bg-green-500 text-white px-2 py-1 rounded">Accept</button>
+                                            <button class="text-xs bg-gray-500 text-white px-2 py-1 rounded">Reject</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded-2xl shadow-sm">
+                                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                                    <i data-lucide="terminal" class="w-4 h-4"></i>Command Panel
+                                </h3>
+                                <form class="space-y-3">
+                                    <div>
+                                        <label class="text-sm font-medium">Select Train</label>
+                                        <select class="w-full p-2 border rounded-md text-sm mt-1">
+                                            <option>Select Train...</option>
+                                            <option>12001 - Rajdhani Express</option>
+                                            <option>12002 - Shatabdi Express</option>
+                                            <option>12345 - Local Passenger</option>
+                                            <option>F001 - Freight Train</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-sm font-medium">Action</label>
+                                        <select class="w-full p-2 border rounded-md text-sm mt-1">
+                                            <option>Select Action...</option>
+                                            <option>Hold at Signal</option>
+                                            <option>Allow Proceed</option>
+                                            <option>Change Route</option>
+                                            <option>Adjust Speed</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-sm font-medium">Reason/Comment</label>
+                                        <textarea class="w-full p-2 border rounded-md text-sm mt-1" rows="2" placeholder="Enter reason for action..."></textarea>
+                                    </div>
+                                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700 flex items-center justify-center gap-2">
+                                        <i data-lucide="send" class="w-4 h-4"></i>Execute Command
+                                    </button>
+                                 </form>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded-2xl shadow-sm">
+                                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                                    <i data-lucide="history" class="w-4 h-4"></i>Recent Actions
+                                </h3>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                        <span>Hold 12002 at Signal A</span>
+                                        <span class="text-xs text-gray-500">2:30 PM</span>
+                        </div>
+                                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                        <span>Allow 12001 to proceed</span>
+                                        <span class="text-xs text-gray-500">2:25 PM</span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                        <span>Reroute F001 to Track 3</span>
+                                        <span class="text-xs text-gray-500">2:20 PM</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                 <div id="what-if-analysis" class="page hidden fade-in">
+                    <h1 class="text-2xl font-bold mb-4">Scenario Lab - Advanced Simulation</h1>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 space-y-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <i data-lucide="settings" class="w-5 h-5"></i>Scenario Configuration
+                                </h3>
+                                <form id="what-if-form" class="space-y-6">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="text-sm font-medium">Base Scenario</label>
+                                            <select class="w-full p-2 mt-1 border rounded-md">
+                                                <option>Current State (Baseline)</option>
+                                                <option>Peak Hour Traffic</option>
+                                                <option>Festival Season</option>
+                                                <option>Maintenance Window</option>
+                                                <option>Emergency Response</option>
+                                            </select>
+                                    </div>
+                                        <div>
+                                            <label class="text-sm font-medium">Simulation Duration</label>
+                                            <select class="w-full p-2 mt-1 border rounded-md">
+                                                <option>2 Hours</option>
+                                                <option>6 Hours</option>
+                                                <option>12 Hours</option>
+                                                <option>24 Hours</option>
+                                                <option>1 Week</option>
+                                            </select>
+                                </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="text-sm font-medium mb-3 block">Disruption Events</label>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div class="space-y-2">
+                                                <h4 class="font-semibold text-sm text-gray-700">Infrastructure</h4>
+                                                <label class="flex items-center p-2 border rounded-md hover:bg-gray-50">
+                                                    <input type="checkbox" class="h-4 w-4 rounded border-gray-300"> 
+                                                    <span class="ml-2 text-sm">Signal Failure</span>
+                                                </label>
+                                                <label class="flex items-center p-2 border rounded-md hover:bg-gray-50">
+                                                    <input type="checkbox" class="h-4 w-4 rounded border-gray-300"> 
+                                                    <span class="ml-2 text-sm">Track Maintenance</span>
+                                                </label>
+                                                <label class="flex items-center p-2 border rounded-md hover:bg-gray-50">
+                                                    <input type="checkbox" class="h-4 w-4 rounded border-gray-300"> 
+                                                    <span class="ml-2 text-sm">Platform Closure</span>
+                                                </label>
+                                                <label class="flex items-center p-2 border rounded-md hover:bg-gray-50">
+                                                    <input type="checkbox" class="h-4 w-4 rounded border-gray-300"> 
+                                                    <span class="ml-2 text-sm">Power Outage</span>
+                                                </label>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <h4 class="font-semibold text-sm text-gray-700">Operational</h4>
+                                                <label class="flex items-center p-2 border rounded-md hover:bg-gray-50">
+                                                    <input type="checkbox" class="h-4 w-4 rounded border-gray-300"> 
+                                                    <span class="ml-2 text-sm">Engine Failure</span>
+                                                </label>
+                                                <label class="flex items-center p-2 border rounded-md hover:bg-gray-50">
+                                                    <input type="checkbox" class="h-4 w-4 rounded border-gray-300"> 
+                                                    <span class="ml-2 text-sm">Staff Shortage</span>
+                                                </label>
+                                                <label class="flex items-center p-2 border rounded-md hover:bg-gray-50">
+                                                    <input type="checkbox" class="h-4 w-4 rounded border-gray-300"> 
+                                                    <span class="ml-2 text-sm">Security Alert</span>
+                                                </label>
+                                                <label class="flex items-center p-2 border rounded-md hover:bg-gray-50">
+                                                    <input type="checkbox" class="h-4 w-4 rounded border-gray-300"> 
+                                                    <span class="ml-2 text-sm">Crowd Surge</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="text-sm font-medium mb-3 block">Weather Conditions</label>
+                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                            <label class="flex items-center p-2 border rounded-md hover:bg-gray-50">
+                                                <input type="radio" name="weather" class="h-4 w-4"> 
+                                                <span class="ml-2 text-sm">Clear</span>
+                                            </label>
+                                            <label class="flex items-center p-2 border rounded-md hover:bg-gray-50">
+                                                <input type="radio" name="weather" class="h-4 w-4"> 
+                                                <span class="ml-2 text-sm">Rain</span>
+                                            </label>
+                                            <label class="flex items-center p-2 border rounded-md hover:bg-gray-50">
+                                                <input type="radio" name="weather" class="h-4 w-4"> 
+                                                <span class="ml-2 text-sm">Fog</span>
+                                            </label>
+                                            <label class="flex items-center p-2 border rounded-md hover:bg-gray-50">
+                                                <input type="radio" name="weather" class="h-4 w-4"> 
+                                                <span class="ml-2 text-sm">Storm</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="text-sm font-medium">Scenario Name</label>
+                                            <input type="text" value="Emergency Response - Signal Failure" class="w-full p-2 mt-1 border rounded-md">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm font-medium">Priority Level</label>
+                                            <select class="w-full p-2 mt-1 border rounded-md">
+                                                <option>High</option>
+                                                <option>Medium</option>
+                                                <option>Low</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                <div class="flex gap-4">
+                                        <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 flex items-center justify-center gap-2">
+                                            <i data-lucide="play" class="w-4 h-4"></i>Run Advanced Simulation
+                                        </button>
+                                        <button type="button" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded-md hover:bg-gray-300 flex items-center justify-center gap-2">
+                                            <i data-lucide="save" class="w-4 h-4"></i>Save Scenario
+                                        </button>
+                                        <button type="button" class="flex-1 bg-green-200 text-green-800 py-3 rounded-md hover:bg-green-300 flex items-center justify-center gap-2">
+                                            <i data-lucide="download" class="w-4 h-4"></i>Export
+                                        </button>
+                                </div>
+                            </form>
+                        </div>
+                            
+                        <div id="simulation-results" class="bg-white p-6 rounded-2xl shadow-sm hidden fade-in">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>Simulation Results: Baseline vs. Scenario
+                                </h3>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                    <div class="bg-gray-50 p-4 rounded-lg">
+                                        <h4 class="font-bold text-lg mb-3 flex items-center gap-2">
+                                            <i data-lucide="baseline" class="w-4 h-4"></i>Baseline Performance
+                                        </h4>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between"><span>Avg Delay:</span><span class="font-semibold">8.2 min</span></div>
+                                            <div class="flex justify-between"><span>Throughput:</span><span class="font-semibold">142 trains/hr</span></div>
+                                            <div class="flex justify-between"><span>Punctuality:</span><span class="font-semibold">78%</span></div>
+                                            <div class="flex justify-between"><span>Energy Efficiency:</span><span class="font-semibold">82%</span></div>
+                                            <div class="flex justify-between"><span>Passenger Satisfaction:</span><span class="font-semibold">3.2/5</span></div>
+                            </div>
+                                    </div>
+                                    <div class="bg-green-50 p-4 rounded-lg">
+                                        <h4 class="font-bold text-lg mb-3 flex items-center gap-2">
+                                            <i data-lucide="trending-up" class="w-4 h-4"></i>Scenario Performance
+                                        </h4>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between"><span>Avg Delay:</span><span class="font-semibold text-green-600">4.1 min</span></div>
+                                            <div class="flex justify-between"><span>Throughput:</span><span class="font-semibold text-green-600">168 trains/hr</span></div>
+                                            <div class="flex justify-between"><span>Punctuality:</span><span class="font-semibold text-green-600">92%</span></div>
+                                            <div class="flex justify-between"><span>Energy Efficiency:</span><span class="font-semibold text-green-600">89%</span></div>
+                                            <div class="flex justify-between"><span>Passenger Satisfaction:</span><span class="font-semibold text-green-600">4.1/5</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                    <div class="bg-blue-50 p-4 rounded-lg">
+                                        <h4 class="font-bold mb-2 flex items-center gap-2">
+                                            <i data-lucide="arrow-up" class="w-4 h-4"></i>Improvements
+                                        </h4>
+                                        <ul class="list-disc pl-5 text-sm space-y-1">
+                                            <li>Punctuality: <span class="text-green-600 font-semibold">+14%</span></li>
+                                            <li>Avg Delay: <span class="text-green-600 font-semibold">-50%</span></li>
+                                            <li>Throughput: <span class="text-green-600 font-semibold">+18%</span></li>
+                                            <li>Energy Efficiency: <span class="text-green-600 font-semibold">+7%</span></li>
+                                        </ul>
+                                    </div>
+                                    <div class="bg-amber-50 p-4 rounded-lg">
+                                        <h4 class="font-bold mb-2 flex items-center gap-2">
+                                            <i data-lucide="alert-triangle" class="w-4 h-4"></i>Risks Identified
+                                        </h4>
+                                        <ul class="list-disc pl-5 text-sm space-y-1">
+                                            <li>Platform congestion during peak</li>
+                                            <li>Increased maintenance costs</li>
+                                            <li>Staff training requirements</li>
+                                        </ul>
+                                    </div>
+                                    <div class="bg-purple-50 p-4 rounded-lg">
+                                        <h4 class="font-bold mb-2 flex items-center gap-2">
+                                            <i data-lucide="dollar-sign" class="w-4 h-4"></i>Cost Impact
+                                        </h4>
+                                        <ul class="list-disc pl-5 text-sm space-y-1">
+                                            <li>Implementation: ₹2.4L</li>
+                                            <li>Monthly savings: ₹8.7L</li>
+                                            <li>ROI: 360% in 1 year</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h4 class="font-bold mb-2 flex items-center gap-2">
+                                        <i data-lucide="brain" class="w-4 h-4"></i>AI Recommendations
+                                    </h4>
+                                    <p class="text-sm text-gray-700 mb-2">Based on simulation results, the AI recommends implementing this scenario with the following optimizations:</p>
+                                    <ul class="list-disc pl-5 text-sm space-y-1">
+                                        <li>Gradual rollout over 2 weeks to minimize disruption</li>
+                                        <li>Additional staff training for new procedures</li>
+                                        <li>Enhanced monitoring during peak hours</li>
+                                        <li>Backup plans for critical failure points</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <i data-lucide="history" class="w-5 h-5"></i>Recent Scenarios
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <div class="font-semibold text-sm">Peak Hour Optimization</div>
+                                        <div class="text-xs text-gray-500">2 hours ago</div>
+                                        <div class="text-xs text-green-600">+12% efficiency</div>
+                                    </div>
+                                    <div class="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <div class="font-semibold text-sm">Weather Response</div>
+                                        <div class="text-xs text-gray-500">1 day ago</div>
+                                        <div class="text-xs text-amber-600">+5% efficiency</div>
+                                    </div>
+                                    <div class="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <div class="font-semibold text-sm">Maintenance Window</div>
+                                        <div class="text-xs text-gray-500">3 days ago</div>
+                                        <div class="text-xs text-blue-600">+8% efficiency</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <i data-lucide="zap" class="w-5 h-5"></i>Quick Scenarios
+                                </h3>
+                                <div class="space-y-2">
+                                    <button class="w-full text-left p-2 border rounded-md hover:bg-gray-50 text-sm">
+                                        Emergency Response
+                                    </button>
+                                    <button class="w-full text-left p-2 border rounded-md hover:bg-gray-50 text-sm">
+                                        Festival Traffic
+                                    </button>
+                                    <button class="w-full text-left p-2 border rounded-md hover:bg-gray-50 text-sm">
+                                        Maintenance Mode
+                                    </button>
+                                    <button class="w-full text-left p-2 border rounded-md hover:bg-gray-50 text-sm">
+                                        Weather Alert
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                 <div id="alerts" class="page hidden fade-in">
+                    <h1 class="text-2xl font-bold mb-4">Alerts & Notifications</h1>
+                    <div class="space-y-4" id="alerts-container"></div>
+                </div>
+                 
+                 <div id="timetable" class="page hidden fade-in">
+                    <h1 class="text-2xl font-bold mb-6">Timetable Planner - Schedule Management</h1>
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <div class="lg:col-span-3 space-y-6">
+                            <!-- Schedule Editor -->
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="table" class="w-5 h-5"></i>Schedule Editor
+                                </h3>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-2 text-left">Train No.</th>
+                                                <th class="px-4 py-2 text-left">Origin</th>
+                                                <th class="px-4 py-2 text-left">Destination</th>
+                                                <th class="px-4 py-2 text-left">Departure</th>
+                                                <th class="px-4 py-2 text-left">Arrival</th>
+                                                <th class="px-4 py-2 text-left">Type</th>
+                                                <th class="px-4 py-2 text-left">Platform</th>
+                                                <th class="px-4 py-2 text-left">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200">
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 font-semibold">12001</td>
+                                                <td class="px-4 py-3">Delhi Central</td>
+                                                <td class="px-4 py-3">Mumbai CST</td>
+                                                <td class="px-4 py-3">14:30</td>
+                                                <td class="px-4 py-3">08:15+1</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Express</span></td>
+                                                <td class="px-4 py-3">Platform 1</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Confirmed</span></td>
+                                            </tr>
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 font-semibold">12002</td>
+                                                <td class="px-4 py-3">Delhi Central</td>
+                                                <td class="px-4 py-3">Ahmedabad</td>
+                                                <td class="px-4 py-3">15:00</td>
+                                                <td class="px-4 py-3">06:30+1</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Express</span></td>
+                                                <td class="px-4 py-3">Platform 2</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">Delayed</span></td>
+                                            </tr>
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 font-semibold">12345</td>
+                                                <td class="px-4 py-3">Delhi Central</td>
+                                                <td class="px-4 py-3">Ghaziabad</td>
+                                                <td class="px-4 py-3">15:30</td>
+                                                <td class="px-4 py-3">16:15</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Passenger</span></td>
+                                                <td class="px-4 py-3">Platform 3</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Cancelled</span></td>
+                                            </tr>
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 font-semibold">F001</td>
+                                                <td class="px-4 py-3">Delhi Freight</td>
+                                                <td class="px-4 py-3">Mumbai Port</td>
+                                                <td class="px-4 py-3">16:00</td>
+                                                <td class="px-4 py-3">10:00+1</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Freight</span></td>
+                                                <td class="px-4 py-3">Freight Yard</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">On Schedule</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-4 flex gap-2">
+                                    <button class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 flex items-center gap-2">
+                                        <i data-lucide="plus" class="w-4 h-4"></i>Add Train
+                                    </button>
+                                    <button class="bg-green-600 text-white px-4 py-2 rounded-md text-sm hover:bg-green-700 flex items-center gap-2">
+                                        <i data-lucide="upload" class="w-4 h-4"></i>Import CSV
+                                    </button>
+                                    <button class="bg-purple-600 text-white px-4 py-2 rounded-md text-sm hover:bg-purple-700 flex items-center gap-2">
+                                        <i data-lucide="download" class="w-4 h-4"></i>Export
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Timeline Visualization -->
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="timeline" class="w-5 h-5"></i>Timeline Visualization
+                                </h3>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <div class="space-y-2">
+                                        <div class="flex items-center gap-4 text-sm">
+                                            <div class="w-20 text-right">14:30</div>
+                                            <div class="flex-1 bg-blue-200 h-6 rounded flex items-center px-2">
+                                                <span class="text-xs font-semibold">12001 - Delhi-Mumbai</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-4 text-sm">
+                                            <div class="w-20 text-right">15:00</div>
+                                            <div class="flex-1 bg-amber-200 h-6 rounded flex items-center px-2">
+                                                <span class="text-xs font-semibold">12002 - Delhi-Ahmedabad (Delayed)</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-4 text-sm">
+                                            <div class="w-20 text-right">15:30</div>
+                                            <div class="flex-1 bg-red-200 h-6 rounded flex items-center px-2">
+                                                <span class="text-xs font-semibold">12345 - Local (Cancelled)</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-4 text-sm">
+                                            <div class="w-20 text-right">16:00</div>
+                                            <div class="flex-1 bg-gray-200 h-6 rounded flex items-center px-2">
+                                                <span class="text-xs font-semibold">F001 - Freight</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                    <div class="text-center p-2 bg-blue-50 rounded">
+                                        <div class="font-semibold text-blue-800">Platform 1</div>
+                                        <div class="text-blue-600">12001 (14:30-15:00)</div>
+                                    </div>
+                                    <div class="text-center p-2 bg-amber-50 rounded">
+                                        <div class="font-semibold text-amber-800">Platform 2</div>
+                                        <div class="text-amber-600">12002 (15:00-15:30)</div>
+                                    </div>
+                                    <div class="text-center p-2 bg-red-50 rounded">
+                                        <div class="font-semibold text-red-800">Platform 3</div>
+                                        <div class="text-red-600">12345 (Cancelled)</div>
+                                    </div>
+                                    <div class="text-center p-2 bg-gray-50 rounded">
+                                        <div class="font-semibold text-gray-800">Freight Yard</div>
+                                        <div class="text-gray-600">F001 (16:00-16:30)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Optimization Panel -->
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <i data-lucide="zap" class="w-5 h-5"></i>Optimization
+                                </h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="text-sm font-medium">Optimization Objective</label>
+                                        <select class="w-full p-2 mt-1 border rounded-md text-sm">
+                                            <option>Minimize Delays</option>
+                                            <option>Maximize Throughput</option>
+                                            <option>Balance Passenger/Freight</option>
+                                        </select>
+                                    </div>
+                                    <button class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 flex items-center justify-center gap-2">
+                                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>Re-run Optimizer
+                                    </button>
+                                    <div class="p-3 bg-green-50 rounded-lg">
+                                        <div class="text-sm font-semibold text-green-800 mb-1">Optimization Results</div>
+                                        <div class="text-xs text-green-700">
+                                            <div>Delays reduced by 23%</div>
+                                            <div>Throughput increased by 15%</div>
+                                            <div>Platform utilization: 89%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <i data-lucide="calendar" class="w-5 h-5"></i>Special Events
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="p-3 bg-blue-50 rounded-lg">
+                                        <div class="font-semibold text-sm text-blue-800">Maintenance Window</div>
+                                        <div class="text-xs text-blue-600">Track 2 - 02:00-04:00</div>
+                                    </div>
+                                    <div class="p-3 bg-purple-50 rounded-lg">
+                                        <div class="font-semibold text-sm text-purple-800">Special Train</div>
+                                        <div class="text-xs text-purple-600">VIP Movement - 18:00</div>
+                                    </div>
+                                    <div class="p-3 bg-amber-50 rounded-lg">
+                                        <div class="font-semibold text-sm text-amber-800">Platform Closure</div>
+                                        <div class="text-xs text-amber-600">Platform 4 - 14:00-16:00</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 
+                 <div id="reports" class="page hidden fade-in">
+                     <h1 class="text-2xl font-bold mb-6">Performance & Analytics Dashboard</h1>
+                     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <div class="lg:col-span-3 space-y-6">
+                            <!-- Enhanced KPI Cards -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-green-500">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="font-semibold text-gray-500 text-sm">Punctuality Rate</h3>
+                                            <p class="text-3xl font-bold text-green-500">92.3%</p>
+                                            <p class="text-xs text-gray-500 mt-1">Target: 95%</p>
+                            </div>
+                                        <div class="text-right">
+                                            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-amber-500">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="font-semibold text-gray-500 text-sm">Average Delay</h3>
+                                            <p class="text-3xl font-bold text-amber-500">4.2 min</p>
+                                            <p class="text-xs text-gray-500 mt-1">-12% from last week</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-blue-500">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="font-semibold text-gray-500 text-sm">Throughput</h3>
+                                            <p class="text-3xl font-bold text-blue-500">48 t/hr</p>
+                                            <p class="text-xs text-gray-500 mt-1">Peak: 52 trains/hr</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-purple-500">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="font-semibold text-gray-500 text-sm">Platform Usage</h3>
+                                            <p class="text-3xl font-bold text-purple-500">78%</p>
+                                            <p class="text-xs text-gray-500 mt-1">12 platforms active</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Additional Performance Metrics -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                    <h3 class="font-semibold text-gray-500 text-sm">Energy Efficiency</h3>
+                                    <p class="text-3xl font-bold text-emerald-500">87%</p>
+                                    <p class="text-xs text-gray-500 mt-1">Green operations</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                    <h3 class="font-semibold text-gray-500 text-sm">Passenger Satisfaction</h3>
+                                    <p class="text-3xl font-bold text-indigo-500">4.2</p>
+                                    <p class="text-xs text-gray-500 mt-1">Out of 5.0 rating</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                    <h3 class="font-semibold text-gray-500 text-sm">Safety Score</h3>
+                                    <p class="text-3xl font-bold text-green-500">98.5%</p>
+                                    <p class="text-xs text-gray-500 mt-1">Zero incidents</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                    <h3 class="font-semibold text-gray-500 text-sm">Cost per KM</h3>
+                                    <p class="text-3xl font-bold text-blue-500">₹2.4</p>
+                                    <p class="text-xs text-gray-500 mt-1">-8% from target</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Enhanced Charts Section -->
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                    <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                                        <i data-lucide="trending-up" class="w-5 h-5"></i>Punctuality by Line
+                                    </h3>
+                                    <canvas id="punctualityChart" height="300"></canvas>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                    <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                                        <i data-lucide="pie-chart" class="w-5 h-5"></i>Causes for Delay
+                                    </h3>
+                                    <canvas id="delayChart" height="300"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                    <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                                        <i data-lucide="activity" class="w-5 h-5"></i>Performance Trends (7 Days)
+                                    </h3>
+                                    <canvas id="trendsChart" height="300"></canvas>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                    <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                                        <i data-lucide="bar-chart-3" class="w-5 h-5"></i>Station Performance
+                                    </h3>
+                                    <canvas id="stationChart" height="300"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- Real-time Performance Table -->
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="table" class="w-5 h-5"></i>Real-time Train Performance
+                                </h3>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm text-left">
+                                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                            <tr>
+                                                <th class="px-6 py-3">Train ID</th>
+                                                <th class="px-6 py-3">Route</th>
+                                                <th class="px-6 py-3">Status</th>
+                                                <th class="px-6 py-3">Delay</th>
+                                                <th class="px-6 py-3">Punctuality</th>
+                                                <th class="px-6 py-3">Passengers</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="performance-table">
+                                            <tr class="bg-white border-b">
+                                                <td class="px-6 py-4 font-semibold">12001</td>
+                                                <td class="px-6 py-4">Delhi-Mumbai</td>
+                                                <td class="px-6 py-4"><span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">On Time</span></td>
+                                                <td class="px-6 py-4">0 min</td>
+                                                <td class="px-6 py-4">100%</td>
+                                                <td class="px-6 py-4">1,200</td>
+                                            </tr>
+                                            <tr class="bg-white border-b">
+                                                <td class="px-6 py-4 font-semibold">12002</td>
+                                                <td class="px-6 py-4">Delhi-Ahmedabad</td>
+                                                <td class="px-6 py-4"><span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">Delayed</span></td>
+                                                <td class="px-6 py-4">15 min</td>
+                                                <td class="px-6 py-4">85%</td>
+                                                <td class="px-6 py-4">800</td>
+                                            </tr>
+                                            <tr class="bg-white border-b">
+                                                <td class="px-6 py-4 font-semibold">12345</td>
+                                                <td class="px-6 py-4">Local Passenger</td>
+                                                <td class="px-6 py-4"><span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Stopped</span></td>
+                                                <td class="px-6 py-4">25 min</td>
+                                                <td class="px-6 py-4">60%</td>
+                                                <td class="px-6 py-4">450</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <i data-lucide="filter" class="w-5 h-5"></i>Filters & Controls
+                                </h3>
+                             <div class="space-y-4">
+                                    <div>
+                                        <label class="text-sm font-medium">Date Range</label>
+                                        <div class="grid grid-cols-2 gap-2 mt-1">
+                                            <input type="date" class="p-2 border rounded-md text-sm">
+                                            <input type="date" class="p-2 border rounded-md text-sm">
+                             </div>
+                        </div>
+                                    <div>
+                                        <label class="text-sm font-medium">Traffic Type</label>
+                                        <select class="w-full p-2 mt-1 border rounded-md text-sm">
+                                            <option>All Types</option>
+                                            <option>Express Trains</option>
+                                            <option>Passenger Trains</option>
+                                            <option>Freight Trains</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-sm font-medium">Line Selection</label>
+                                        <select class="w-full p-2 mt-1 border rounded-md text-sm">
+                                            <option>All Lines</option>
+                                            <option>Main Line 1</option>
+                                            <option>Main Line 2</option>
+                                            <option>Local Line</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-sm font-medium">Performance Metric</label>
+                                        <select class="w-full p-2 mt-1 border rounded-md text-sm">
+                                            <option>Punctuality</option>
+                                            <option>Delay Analysis</option>
+                                            <option>Throughput</option>
+                                            <option>Energy Efficiency</option>
+                                        </select>
+                                    </div>
+                                    <button class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 flex items-center justify-center gap-2">
+                                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>Apply Filters
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <i data-lucide="download" class="w-5 h-5"></i>Export Options
+                                </h3>
+                                <div class="space-y-2">
+                                    <button class="w-full text-left p-2 border rounded-md hover:bg-gray-50 text-sm flex items-center gap-2">
+                                        <i data-lucide="file-text" class="w-4 h-4"></i>PDF Report
+                                    </button>
+                                    <button class="w-full text-left p-2 border rounded-md hover:bg-gray-50 text-sm flex items-center gap-2">
+                                        <i data-lucide="table" class="w-4 h-4"></i>Excel Export
+                                    </button>
+                                    <button class="w-full text-left p-2 border rounded-md hover:bg-gray-50 text-sm flex items-center gap-2">
+                                        <i data-lucide="image" class="w-4 h-4"></i>Chart Images
+                                    </button>
+                                    <button class="w-full text-left p-2 border rounded-md hover:bg-gray-50 text-sm flex items-center gap-2">
+                                        <i data-lucide="share" class="w-4 h-4"></i>Share Dashboard
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <i data-lucide="target" class="w-5 h-5"></i>Performance Targets
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm">Punctuality</span>
+                                        <span class="text-sm font-semibold">95%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-green-500 h-2 rounded-full" style="width: 92%"></div>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm">Energy Efficiency</span>
+                                        <span class="text-sm font-semibold">90%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-blue-500 h-2 rounded-full" style="width: 87%"></div>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm">Safety Score</span>
+                                        <span class="text-sm font-semibold">99%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-emerald-500 h-2 rounded-full" style="width: 98%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                     </div>
+                </div>
+
+                <div id="audit" class="page hidden fade-in">
+                    <h1 class="text-2xl font-bold mb-6">Audit & Logs</h1>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">System & User Audit Trail</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3">Timestamp</th>
+                                        <th class="px-6 py-3">User/System</th>
+                                        <th class="px-6 py-3">Category</th>
+                                        <th class="px-6 py-3">Action</th>
+                                        <th class="px-6 py-3">Severity</th>
+                                        <th class="px-6 py-3">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="audit-log"></tbody>
+                            </table>
+                        </div>
+                     </div>
+                </div>
+                
+                 <div id="admin" class="page hidden fade-in">
+                    <h1 class="text-2xl font-bold mb-6">System Administration</h1>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 space-y-6">
+                            <!-- User Management -->
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="users" class="w-5 h-5"></i>User Management
+                                </h3>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-2 text-left">User</th>
+                                                <th class="px-4 py-2 text-left">Role</th>
+                                                <th class="px-4 py-2 text-left">Section</th>
+                                                <th class="px-4 py-2 text-left">Status</th>
+                                                <th class="px-4 py-2 text-left">Last Login</th>
+                                                <th class="px-4 py-2 text-left">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200">
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 font-semibold">ControllerDemo</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Controller</span></td>
+                                                <td class="px-4 py-3">Delhi-Ghaziabad</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Active</span></td>
+                                                <td class="px-4 py-3">2:30 PM</td>
+                                                <td class="px-4 py-3">
+                                                    <button class="text-xs bg-blue-500 text-white px-2 py-1 rounded mr-1">Edit</button>
+                                                    <button class="text-xs bg-gray-500 text-white px-2 py-1 rounded">Reset</button>
+                                                </td>
+                                            </tr>
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 font-semibold">Supervisor01</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">Supervisor</span></td>
+                                                <td class="px-4 py-3">All Sections</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Active</span></td>
+                                                <td class="px-4 py-3">1:45 PM</td>
+                                                <td class="px-4 py-3">
+                                                    <button class="text-xs bg-blue-500 text-white px-2 py-1 rounded mr-1">Edit</button>
+                                                    <button class="text-xs bg-gray-500 text-white px-2 py-1 rounded">Reset</button>
+                                                </td>
+                                            </tr>
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 font-semibold">Analyst01</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Analyst</span></td>
+                                                <td class="px-4 py-3">N/A</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Inactive</span></td>
+                                                <td class="px-4 py-3">Yesterday</td>
+                                                <td class="px-4 py-3">
+                                                    <button class="text-xs bg-blue-500 text-white px-2 py-1 rounded mr-1">Edit</button>
+                                                    <button class="text-xs bg-gray-500 text-white px-2 py-1 rounded">Reset</button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-4 flex gap-2">
+                                    <button class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 flex items-center gap-2">
+                                        <i data-lucide="plus" class="w-4 h-4"></i>Add User
+                                    </button>
+                                    <button class="bg-green-600 text-white px-4 py-2 rounded-md text-sm hover:bg-green-700 flex items-center gap-2">
+                                        <i data-lucide="upload" class="w-4 h-4"></i>Bulk Import
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Section Configuration -->
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="settings" class="w-5 h-5"></i>Section Configuration
+                                </h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="text-sm font-medium">Section Name</label>
+                                            <input type="text" value="Delhi-Ghaziabad Corridor" class="w-full p-2 mt-1 border rounded-md text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm font-medium">Track Length (km)</label>
+                                            <input type="number" value="45.2" class="w-full p-2 mt-1 border rounded-md text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm font-medium">Speed Limit (km/h)</label>
+                                            <input type="number" value="120" class="w-full p-2 mt-1 border rounded-md text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm font-medium">Max Trains/Hour</label>
+                                            <input type="number" value="24" class="w-full p-2 mt-1 border rounded-md text-sm">
+                                        </div>
+                                    </div>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="text-sm font-medium">Platform Count</label>
+                                            <input type="number" value="12" class="w-full p-2 mt-1 border rounded-md text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="text-sm font-medium">Signal System</label>
+                                            <select class="w-full p-2 mt-1 border rounded-md text-sm">
+                                                <option>Automatic Block Signaling</option>
+                                                <option>Manual Block Signaling</option>
+                                                <option>CTC (Centralized Traffic Control)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="text-sm font-medium">Emergency Contacts</label>
+                                            <input type="text" value="+91-9876543210" class="w-full p-2 mt-1 border rounded-md text-sm">
+                                        </div>
+                                        <button class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">Save Configuration</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- System Settings -->
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                                    <i data-lucide="cog" class="w-5 h-5"></i>System Settings
+                                </h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="text-sm font-medium">Alert Thresholds</label>
+                                            <div class="space-y-2 mt-2">
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-sm">Critical Delay (min)</span>
+                                                    <input type="number" value="30" class="w-20 p-1 border rounded text-sm">
+                                                </div>
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-sm">High Priority (min)</span>
+                                                    <input type="number" value="15" class="w-20 p-1 border rounded text-sm">
+                                                </div>
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-sm">Medium Priority (min)</span>
+                                                    <input type="number" value="10" class="w-20 p-1 border rounded text-sm">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="text-sm font-medium">KPI Targets</label>
+                                            <div class="space-y-2 mt-2">
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-sm">Punctuality (%)</span>
+                                                    <input type="number" value="95" class="w-20 p-1 border rounded text-sm">
+                                                </div>
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-sm">Throughput (trains/hr)</span>
+                                                    <input type="number" value="50" class="w-20 p-1 border rounded text-sm">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="text-sm font-medium">System Status</label>
+                                            <div class="space-y-2 mt-2">
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-sm">Maintenance Mode</span>
+                                                    <label class="relative inline-flex items-center cursor-pointer">
+                                                        <input type="checkbox" class="sr-only peer">
+                                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                    </label>
+                                                </div>
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-sm">Auto-optimization</span>
+                                                    <label class="relative inline-flex items-center cursor-pointer">
+                                                        <input type="checkbox" checked class="sr-only peer">
+                                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="text-sm font-medium">Logging Level</label>
+                                            <select class="w-full p-2 mt-1 border rounded-md text-sm">
+                                                <option>Debug</option>
+                                                <option>Info</option>
+                                                <option>Warning</option>
+                                                <option>Error</option>
+                                            </select>
+                                        </div>
+                                        <button class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700">Save Settings</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- System Status & Quick Actions -->
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <i data-lucide="activity" class="w-5 h-5"></i>System Health
+                                </h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-1">
+                                            <span>CPU Usage</span>
+                                            <span>45%</span>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="bg-blue-500 h-2 rounded-full" style="width: 45%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-1">
+                                            <span>Memory Usage</span>
+                                            <span>67%</span>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="bg-green-500 h-2 rounded-full" style="width: 67%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-1">
+                                            <span>Storage</span>
+                                            <span>23%</span>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="bg-emerald-500 h-2 rounded-full" style="width: 23%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-1">
+                                            <span>Network</span>
+                                            <span>98%</span>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="bg-purple-500 h-2 rounded-full" style="width: 98%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <i data-lucide="zap" class="w-5 h-5"></i>Quick Actions
+                                </h3>
+                                <div class="space-y-2">
+                                    <button class="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center gap-2">
+                                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>Restart AI System
+                                    </button>
+                                    <button class="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center gap-2">
+                                        <i data-lucide="database" class="w-4 h-4"></i>Backup Database
+                                    </button>
+                                    <button class="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center gap-2">
+                                        <i data-lucide="shield" class="w-4 h-4"></i>Security Scan
+                                    </button>
+                                    <button class="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center gap-2">
+                                        <i data-lucide="download" class="w-4 h-4"></i>Export Logs
+                                    </button>
+                                    <button class="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center gap-2">
+                                        <i data-lucide="alert-triangle" class="w-4 h-4"></i>Emergency Stop
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <i data-lucide="info" class="w-5 h-5"></i>System Info
+                                </h3>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span>Version:</span>
+                                        <span class="font-semibold">ElevateX v3.0</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Last Updated:</span>
+                                        <span class="font-semibold">2 hours ago</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Uptime:</span>
+                                        <span class="font-semibold">99.8%</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Active Users:</span>
+                                        <span class="font-semibold">3</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Data Source:</span>
+                                        <span class="font-semibold">Live</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                 </div>
+
+            </main>
+        </div>
+    </div>
+    
+    <div id="manual-override-modal" class="hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal w-full max-w-lg bg-white rounded-2xl shadow-lg p-6 fade-in">
+            <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold">Manual Override</h2><button id="close-modal-btn" class="p-1 hover:bg-gray-200 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+            <form id="override-form" class="space-y-4">
+                <div><label class="text-sm font-medium">Select Train</label><select id="override-train" class="w-full p-2 mt-1 border rounded-md"><option>T001</option><option>T002</option><option>T003</option></select></div>
+                <div><label class="text-sm font-medium">Action</label><select id="override-action" class="w-full p-2 mt-1 border rounded-md"><option>Change Route</option><option>Set Speed</option><option>Assign Platform</option></select></div>
+                <div><label class="text-sm font-medium">Details / Reason</label><textarea id="override-reason" placeholder="Enter reason for override..." class="w-full p-2 mt-1 border rounded-md" required></textarea></div>
+                <button type="submit" class="w-full bg-amber-500 text-white py-2 rounded-md hover:bg-amber-600">Apply Override</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const DOM = {
+                loginForm: document.getElementById('login-form'), loginPage: document.getElementById('login-page'), app: document.getElementById('app'),
+                logoutBtn: document.getElementById('logout-btn'), navLinks: document.querySelectorAll('.nav-link'), pages: document.querySelectorAll('.page'),
+                currentTimeEl: document.getElementById('current-time'), systemEfficiencyEl: document.getElementById('system-efficiency'),
+                whatIfForm: document.getElementById('what-if-form'), simResults: document.getElementById('simulation-results'),
+                manualOverrideBtn: document.getElementById('manual-override-btn'), modal: document.getElementById('manual-override-modal'),
+                closeModalBtn: document.getElementById('close-modal-btn'), overrideForm: document.getElementById('override-form'),
+                roleSwitcher: document.getElementById('role-switcher'), userRoleEl: document.getElementById('user-role'), breadcrumb: document.getElementById('breadcrumb'),
+            };
+
+            let dataIntervals = [], charts = {};
+            const auditLog = [
+                { timestamp: new Date(Date.now() - 36e5), user: 'System', action: 'AI_RECOMMENDATION', details: 'Generated suggestion #1 (Reroute Rajdhani)', category: 'AI', severity: 'Info', ip: '192.168.1.100' },
+                { timestamp: new Date(Date.now() - 3e6), user: 'System', action: 'ALERT_TRIGGERED', details: 'Critical: Signal Failure at Junction A', category: 'Alert', severity: 'Critical', ip: '192.168.1.100' },
+                { timestamp: new Date(Date.now() - 2e6), user: 'ControllerDemo', action: 'LOGIN', details: 'User logged into the system', category: 'Authentication', severity: 'Info', ip: '192.168.1.105' },
+                { timestamp: new Date(Date.now() - 1.5e6), user: 'ControllerDemo', action: 'ACCEPT_REC', details: 'Accepted AI recommendation: Dynamic Rerouting for Rajdhani Express', category: 'AI', severity: 'Info', ip: '192.168.1.105' },
+                { timestamp: new Date(Date.now() - 1e6), user: 'System', action: 'TRAIN_STATUS_UPDATE', details: 'Train 12001 status changed to On Time', category: 'Operations', severity: 'Info', ip: '192.168.1.100' },
+                { timestamp: new Date(Date.now() - 8e5), user: 'ControllerDemo', action: 'MANUAL_OVERRIDE', details: 'Applied manual override to Train 12002 - Speed adjustment', category: 'Operations', severity: 'Warning', ip: '192.168.1.105' },
+                { timestamp: new Date(Date.now() - 6e5), user: 'System', action: 'PERFORMANCE_UPDATE', details: 'System efficiency updated to 87%', category: 'Performance', severity: 'Info', ip: '192.168.1.100' },
+                { timestamp: new Date(Date.now() - 4e5), user: 'ControllerDemo', action: 'SCENARIO_RUN', details: 'Executed scenario: Emergency Response - Signal Failure', category: 'Simulation', severity: 'Info', ip: '192.168.1.105' },
+                { timestamp: new Date(Date.now() - 2e5), user: 'System', action: 'ALERT_RESOLVED', details: 'Alert resolved: Signal Failure at Junction A', category: 'Alert', severity: 'Info', ip: '192.168.1.100' },
+                { timestamp: new Date(Date.now() - 1e5), user: 'ControllerDemo', action: 'REPORT_GENERATED', details: 'Performance report generated for last 24 hours', category: 'Reporting', severity: 'Info', ip: '192.168.1.105' },
+            ];
+
+            lucide.createIcons();
+
+            DOM.loginForm.addEventListener('submit', (e) => { e.preventDefault(); login(); });
+            DOM.logoutBtn.addEventListener('click', logout);
+            DOM.navLinks.forEach(link => link.addEventListener('click', handleNav));
+            if (DOM.whatIfForm) DOM.whatIfForm.addEventListener('submit', (e) => { e.preventDefault(); DOM.simResults.classList.remove('hidden'); });
+            DOM.manualOverrideBtn.addEventListener('click', () => DOM.modal.classList.remove('hidden'));
+            DOM.closeModalBtn.addEventListener('click', () => DOM.modal.classList.add('hidden'));
+            DOM.overrideForm.addEventListener('submit', (e) => { e.preventDefault(); applyOverride(); });
+            DOM.roleSwitcher.addEventListener('change', (e) => switchRole(e.target.value));
+
+            function login() {
+                DOM.loginPage.classList.add('hidden');
+                DOM.app.classList.remove('hidden');
+                DOM.app.classList.add('grid', 'fade-in');
+                addLogEntry('ControllerDemo', 'LOGIN', 'User logged into the system.');
+                switchRole('Controller');
+                startDataSimulation();
+            }
+
+            function logout() {
+                DOM.app.classList.add('hidden');
+                DOM.app.classList.remove('grid');
+                DOM.loginPage.classList.remove('hidden');
+                addLogEntry(DOM.userRoleEl.textContent, 'LOGOUT', 'User logged out.');
+                stopDataSimulation();
+            }
+            
+            function switchRole(role) {
+                DOM.userRoleEl.textContent = role;
+                DOM.navLinks.forEach(link => {
+                    const roles = link.dataset.roles.split(',');
+                    link.style.display = roles.includes(role) ? 'flex' : 'none';
+                });
+                const activeLink = document.querySelector('.nav-link.bg-\\[var\\(--sidebar-active-bg\\)\\]');
+                if (activeLink && activeLink.style.display === 'none') {
+                    document.querySelector('.nav-link[data-roles*="' + role + '"]').click();
+                }
+            }
+
+            function handleNav(e) {
+                e.preventDefault();
+                const targetId = e.currentTarget.getAttribute('href').substring(1);
+                const pageName = e.currentTarget.textContent;
+                
+                DOM.navLinks.forEach(nav => nav.classList.remove('bg-[var(--sidebar-active-bg)]','text-[var(--sidebar-active-text)]', 'font-bold'));
+                e.currentTarget.classList.add('bg-[var(--sidebar-active-bg)]','text-[var(--sidebar-active-text)]', 'font-bold');
+                
+                DOM.pages.forEach(page => page.classList.toggle('hidden', page.id !== targetId));
+                DOM.breadcrumb.textContent = `ElevateX / ${pageName}`;
+
+                if (targetId === 'reports') { renderReportCharts(); }
+                if (targetId === 'audit') { renderAuditLog(); }
+                if (targetId === 'control-center') { populateDashboardAlerts(); drawDashboardSchematic(); }
+            }
+            
+            function startDataSimulation() {
+                updateClock(); updateSystemEfficiency(); animateTrains();
+                populateDynamicContent();
+                dataIntervals.push(setInterval(updateClock, 1000));
+                dataIntervals.push(setInterval(updateSystemEfficiency, 5000));
+                dataIntervals.push(setInterval(animateTrains, 10000));
+            }
+
+            function stopDataSimulation() { dataIntervals.forEach(clearInterval); dataIntervals = []; }
+            function updateClock() { if (DOM.currentTimeEl) DOM.currentTimeEl.textContent = new Date().toLocaleTimeString(); }
+            function updateSystemEfficiency() { if(DOM.systemEfficiencyEl) DOM.systemEfficiencyEl.textContent = `${Math.floor(Math.random() * 15) + 80}% System Efficiency`; }
+
+            function populateDynamicContent() {
+                populateRecommendations(); populateAlerts(); drawTracks('track-svg');
+                document.querySelector('a[href="#control-center"]').click();
+            }
+
+            function createRecommendationCard(id, title, confidence, type, details, impact, cost, risk, timeframe, affectedTrains, aiReasoning) {
+                const colors = { High: 'green', Medium: 'amber', Low: 'blue', Critical: 'red' };
+                const priorityColors = { Critical: 'red', High: 'amber', Medium: 'blue', Low: 'gray' };
+                return `<div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-${colors[type]}-500 hover:shadow-lg transition-shadow" data-id="${id}" data-title="${title}">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <h3 class="text-lg font-bold">${title}</h3>
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${priorityColors[type]}-100 text-${priorityColors[type]}-800">${type} Priority</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-2">${details}</p>
+                                <div class="flex items-center gap-4 text-xs text-gray-500">
+                                    <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${timeframe}</span>
+                                    <span class="flex items-center gap-1"><i data-lucide="train" class="w-3 h-3"></i> ${affectedTrains}</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-bold text-${confidence > 90 ? 'green' : confidence > 70 ? 'amber' : 'blue'}-600">${confidence}%</div>
+                                <div class="text-xs text-gray-500">Confidence</div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <h4 class="font-semibold text-sm mb-2 flex items-center gap-1"><i data-lucide="trending-up" class="w-4 h-4"></i> Expected Impact</h4>
+                                <p class="text-sm text-gray-700">${impact}</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <h4 class="font-semibold text-sm mb-2 flex items-center gap-1"><i data-lucide="dollar-sign" class="w-4 h-4"></i> Cost Analysis</h4>
+                                <p class="text-sm text-gray-700">${cost}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-50 p-3 rounded-lg mb-4">
+                            <h4 class="font-semibold text-sm mb-2 flex items-center gap-1"><i data-lucide="brain" class="w-4 h-4"></i> AI Reasoning</h4>
+                            <p class="text-sm text-gray-700">${aiReasoning}</p>
+                        </div>
+                        
+                        <div class="bg-amber-50 p-3 rounded-lg mb-4">
+                            <h4 class="font-semibold text-sm mb-2 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-4 h-4"></i> Risk Assessment</h4>
+                            <p class="text-sm text-gray-700">${risk}</p>
+                        </div>
+                        
+                        <div class="flex gap-3 action-buttons">
+                            <button class="accept-btn flex-1 bg-green-500 text-white py-2 rounded-md hover:bg-green-600 flex items-center justify-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4"></i> Accept
+                            </button>
+                            <button class="reject-btn flex-1 bg-red-500 text-white py-2 rounded-md hover:bg-red-600 flex items-center justify-center gap-2">
+                                <i data-lucide="x" class="w-4 h-4"></i> Reject
+                            </button>
+                            <button class="details-btn flex-1 bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 flex items-center justify-center gap-2">
+                                <i data-lucide="info" class="w-4 h-4"></i> Details
+                            </button>
+                        </div>
+                        <div class="mt-4 result-message hidden"></div>
+                    </div>`;
+            }
+
+            function populateRecommendations() {
+                const container = document.getElementById('recommendations-container'); if(!container) return;
+                container.innerHTML = [
+                    { 
+                        id: 1, 
+                        title: 'Dynamic Rerouting: Rajdhani Express (12001)', 
+                        confidence: 94, 
+                        type: 'Critical', 
+                        details: 'Immediate reroute from Track 1 to Track 3 due to signal failure at Junction A. Current delay: 18 minutes, projected delay if no action: 45 minutes.', 
+                        impact: 'Reduces passenger delay by 27 minutes, improves punctuality by 8.5%, saves 340 passenger-hours.', 
+                        cost: 'Implementation: ₹2.4L, Operational savings: ₹8.7L', 
+                        risk: 'Low risk - Track 3 has 15-minute buffer, no conflicting traffic',
+                        timeframe: 'Immediate (2 minutes)',
+                        affectedTrains: '12001, 12002 (cascading)',
+                        aiReasoning: 'ML model analyzed 47 similar scenarios with 94% success rate. Factors: weather conditions, historical patterns, current traffic density, signal status.'
+                    },
+                    { 
+                        id: 2, 
+                        title: 'Platform Optimization: Central Station', 
+                        confidence: 87, 
+                        type: 'High', 
+                        details: 'Reassign platforms 3-6 to optimize passenger flow and reduce connection times. Current utilization: 65%, optimal: 85%.', 
+                        impact: 'Reduces average connection time by 4.2 minutes, increases platform efficiency by 23%, improves passenger satisfaction.', 
+                        cost: 'Setup: ₹1.2L, Monthly savings: ₹3.8L', 
+                        risk: 'Medium risk - requires coordination with 3 departments, 15-minute implementation window',
+                        timeframe: 'Next 10 minutes',
+                        affectedTrains: 'All platforms (12 trains)',
+                        aiReasoning: 'Optimization algorithm analyzed 6-month platform usage patterns, passenger flow data, and connection requirements.'
+                    },
+                    { 
+                        id: 3, 
+                        title: 'Speed Adjustment: Freight Corridor', 
+                        confidence: 91, 
+                        type: 'Medium', 
+                        details: 'Increase freight train speeds by 15 km/h on sections B-C and D-E during low passenger traffic hours (11 PM - 5 AM).', 
+                        impact: 'Reduces freight transit time by 1.2 hours, increases corridor capacity by 18%, reduces fuel consumption by 8%.', 
+                        cost: 'Fuel savings: ₹4.2L/month, Implementation: ₹0.5L', 
+                        risk: 'Low risk - night hours, minimal passenger impact, proven safe speeds',
+                        timeframe: 'Tonight (11 PM)',
+                        affectedTrains: '8 freight trains',
+                        aiReasoning: 'AI analyzed 2-year historical data showing 91% on-time performance during night hours with similar speed increases.'
+                    },
+                    { 
+                        id: 4, 
+                        title: 'Predictive Maintenance: Signal System', 
+                        confidence: 89, 
+                        type: 'High', 
+                        details: 'Schedule maintenance for Signal Junction B during off-peak hours (2 AM - 4 AM) based on predictive failure indicators.', 
+                        impact: 'Prevents potential 4-hour service disruption, reduces emergency maintenance costs by 60%, improves system reliability.', 
+                        cost: 'Preventive maintenance: ₹1.8L, Avoided emergency cost: ₹12L', 
+                        risk: 'Very low risk - scheduled maintenance, backup systems available',
+                        timeframe: 'Tonight (2 AM - 4 AM)',
+                        affectedTrains: 'None (maintenance window)',
+                        aiReasoning: 'IoT sensors and ML models predict 89% probability of failure within 48 hours based on vibration patterns, temperature, and usage cycles.'
+                    },
+                    { 
+                        id: 5, 
+                        title: 'Crowd Management: Festival Season', 
+                        confidence: 85, 
+                        type: 'Medium', 
+                        details: 'Implement dynamic platform allocation and crowd control measures for upcoming festival traffic (Diwali rush expected).', 
+                        impact: 'Prevents platform overcrowding, reduces passenger wait times by 35%, improves safety metrics, enhances passenger experience.', 
+                        cost: 'Staff deployment: ₹2.1L, Infrastructure: ₹0.8L', 
+                        risk: 'Medium risk - requires additional staff, coordination with security',
+                        timeframe: 'Next 3 days',
+                        affectedTrains: 'All passenger trains (45 trains/day)',
+                        aiReasoning: 'Historical analysis of 5-year Diwali traffic patterns, current booking trends, and weather forecasts predict 40% increase in passenger volume.'
+                    }
+                ].map(r => createRecommendationCard(r.id, r.title, r.confidence, r.type, r.details, r.impact, r.cost, r.risk, r.timeframe, r.affectedTrains, r.aiReasoning)).join('');
+                container.addEventListener('click', handleRecommendationAction);
+            }
+            
+            function handleRecommendationAction(e) {
+                const card = e.target.closest('[data-id]'); if (!card) return;
+                const resultMsg = card.querySelector('.result-message'), actionBtns = card.querySelector('.action-buttons'), title = card.dataset.title;
+                if (e.target.classList.contains('accept-btn')) {
+                    resultMsg.innerHTML = `<p class="text-green-600 font-semibold">Recommendation Accepted & Implemented.</p>`;
+                    addLogEntry(DOM.userRoleEl.textContent, 'ACCEPT_REC', `Accepted suggestion: ${title}`);
+                } else if (e.target.classList.contains('reject-btn')) {
+                    resultMsg.innerHTML = `<p class="text-red-600 font-semibold">Recommendation Rejected.</p>`;
+                    addLogEntry(DOM.userRoleEl.textContent, 'REJECT_REC', `Rejected suggestion: ${title}`);
+                }
+                resultMsg.classList.remove('hidden'); actionBtns.classList.add('hidden');
+            }
+
+            function createAlertCard(title, severity, details, time, affected, resolution, location, impact, actions, escalation, isDashboard = false) {
+                 const severities = { Critical: 'red', High: 'amber', Medium: 'blue' };
+                 const severityColors = { Critical: 'red', High: 'amber', Medium: 'blue' };
+                 
+                 if(isDashboard) {
+                     return `<div class="border-l-4 border-${severities[severity]}-500 pl-2 text-sm">
+                                <p class="font-semibold">${title}</p>
+                                <p class="text-xs text-gray-500">${time} • ${location}</p>
+                                <p class="text-xs text-${severityColors[severity]}-600">${severity} Priority</p>
+                             </div>`;
+                 }
+                 
+                 const solutionBtn = severity === 'Critical' ? `<button class="ai-solution-btn text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-md hover:bg-blue-200 flex items-center gap-1">
+                                                                    <i data-lucide="brain" class="w-3 h-3"></i>AI Solution</button>` : '';
+                 
+                 const actionsList = actions ? actions.map(action => `<li class="text-xs">• ${action}</li>`).join('') : '';
+                 
+                 return `<div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-${severities[severity]}-500 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <h3 class="font-bold text-lg text-${severities[severity]}-700">${title}</h3>
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${severityColors[severity]}-100 text-${severityColors[severity]}-800">${severity}</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-3">${details}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-500 mb-3">
+                                    <div><strong>Location:</strong> ${location}</div>
+                                    <div><strong>Impact:</strong> ${impact}</div>
+                                    <div><strong>Timestamp:</strong> ${time}</div>
+                                    <div><strong>Resolution:</strong> ${resolution}</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                ${solutionBtn}
+                                <button class="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300 flex items-center gap-1">
+                                    <i data-lucide="check" class="w-3 h-3"></i>Acknowledge
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <h4 class="font-semibold text-sm mb-2 flex items-center gap-1">
+                                    <i data-lucide="train" class="w-4 h-4"></i>Affected Trains
+                                </h4>
+                                <p class="text-sm text-gray-700">${affected}</p>
+                            </div>
+                            <div class="bg-amber-50 p-3 rounded-lg">
+                                <h4 class="font-semibold text-sm mb-2 flex items-center gap-1">
+                                    <i data-lucide="alert-triangle" class="w-4 h-4"></i>Escalation Level
+                                </h4>
+                                <p class="text-sm text-gray-700">${escalation}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-50 p-3 rounded-lg mb-4">
+                            <h4 class="font-semibold text-sm mb-2 flex items-center gap-1">
+                                <i data-lucide="activity" class="w-4 h-4"></i>Actions Taken
+                            </h4>
+                            <ul class="text-sm text-gray-700 space-y-1">${actionsList}</ul>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button class="flex-1 bg-green-500 text-white py-2 rounded-md hover:bg-green-600 flex items-center justify-center gap-2 text-sm">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i>Resolve
+                            </button>
+                            <button class="flex-1 bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 flex items-center justify-center gap-2 text-sm">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i>Update
+                            </button>
+                            <button class="flex-1 bg-gray-500 text-white py-2 rounded-md hover:bg-gray-600 flex items-center justify-center gap-2 text-sm">
+                                <i data-lucide="more-horizontal" class="w-4 h-4"></i>More
+                            </button>
+                        </div>
+                    </div>`;
+            }
+
+            const alertData = [
+                { 
+                    title: 'Critical Signal Failure - Junction A', 
+                    severity: 'Critical', 
+                    details: 'Complete signal system failure at Junction A affecting Tracks 2 and 3. Automatic signaling offline, manual control required. Emergency response team dispatched.', 
+                    time: '2:23 PM', 
+                    affected: '12002 (Shatabdi), 22691 (Local), F003 (Freight)', 
+                    resolution: '45 minutes',
+                    location: 'Junction A (Km 15.2)',
+                    impact: 'High - 3 trains delayed, 450 passengers affected',
+                    actions: ['Emergency team dispatched', 'Manual signaling activated', 'Alternative routes planned'],
+                    escalation: 'Level 3 - Regional Manager notified'
+                },
+                { 
+                    title: 'Heavy Fog Alert - Delhi-Ghaziabad Section', 
+                    severity: 'High', 
+                    details: 'Dense fog conditions with visibility reduced to 50m in Delhi-Ghaziabad section. Speed restrictions of 30 km/h implemented. Weather monitoring active.', 
+                    time: '1:45 PM', 
+                    affected: '12001 (Rajdhani), 12345 (Local), 12003 (Duronto)', 
+                    resolution: '2-3 hours',
+                    location: 'Delhi-Ghaziabad Corridor (Km 8.5-25.3)',
+                    impact: 'Medium - Speed restrictions, potential delays',
+                    actions: ['Speed restrictions applied', 'Weather monitoring enhanced', 'Passenger announcements made'],
+                    escalation: 'Level 2 - Operations Manager notified'
+                },
+                { 
+                    title: 'Platform Congestion - Central Station', 
+                    severity: 'High', 
+                    details: 'Platform 3 and 4 experiencing severe congestion due to delayed arrivals. Passenger safety concerns raised. Crowd control measures implemented.', 
+                    time: '2:15 PM', 
+                    affected: 'All platforms (3,4,5,6)', 
+                    resolution: '30 minutes',
+                    location: 'Delhi Central Station',
+                    impact: 'High - 800+ passengers affected, safety concerns',
+                    actions: ['Crowd control activated', 'Additional staff deployed', 'Platform reassignment in progress'],
+                    escalation: 'Level 2 - Station Manager on-site'
+                },
+                { 
+                    title: 'Engine Failure - Freight Train F002', 
+                    severity: 'Medium', 
+                    details: 'Locomotive engine failure on freight train F002 at Km 45.2. Train stopped on main line, blocking traffic. Rescue locomotive dispatched.', 
+                    time: '1:30 PM', 
+                    affected: 'F002 (Freight), 12004 (Express)', 
+                    resolution: '1.5 hours',
+                    location: 'Km 45.2 - Main Line',
+                    impact: 'Medium - 1 freight train, 1 passenger train delayed',
+                    actions: ['Rescue locomotive dispatched', 'Alternative route for passenger train', 'Freight cargo secured'],
+                    escalation: 'Level 1 - Local supervisor handling'
+                },
+                { 
+                    title: 'Power Fluctuation - Signal System', 
+                    severity: 'Medium', 
+                    details: 'Intermittent power fluctuations detected in signal system between Stations B and C. Backup power activated. System monitoring increased.', 
+                    time: '2:45 PM', 
+                    affected: 'All trains in section B-C', 
+                    resolution: '20 minutes',
+                    location: 'Section B-C (Km 25-40)',
+                    impact: 'Low - Backup systems active, minimal disruption',
+                    actions: ['Backup power activated', 'System monitoring enhanced', 'Preventive maintenance scheduled'],
+                    escalation: 'Level 1 - Technical team monitoring'
+                },
+                { 
+                    title: 'Security Alert - Suspicious Activity', 
+                    severity: 'High', 
+                    details: 'Security personnel reported suspicious activity near Platform 2. Security protocols activated. Police notified and on-site.', 
+                    time: '3:00 PM', 
+                    affected: 'Platform 2 operations', 
+                    resolution: 'Ongoing',
+                    location: 'Delhi Central - Platform 2',
+                    impact: 'Medium - Platform 2 temporarily restricted',
+                    actions: ['Security protocols activated', 'Police notified', 'Platform access restricted'],
+                    escalation: 'Level 3 - Security Manager, Police involved'
+                },
+                { 
+                    title: 'Weather Warning - Thunderstorm Approaching', 
+                    severity: 'Medium', 
+                    details: 'Severe thunderstorm approaching from northwest. Expected to impact operations in 45 minutes. Precautionary measures being implemented.', 
+                    time: '3:15 PM', 
+                    affected: 'All outdoor operations', 
+                    resolution: '2-4 hours',
+                    location: 'Regional - 50km radius',
+                    impact: 'Medium - Potential service disruptions',
+                    actions: ['Weather monitoring active', 'Precautionary measures implemented', 'Service adjustments planned'],
+                    escalation: 'Level 2 - Operations Manager monitoring'
+                }
+            ];
+
+            function populateAlerts() {
+                 const container = document.getElementById('alerts-container'); if (!container) return;
+                 container.innerHTML = alertData.map(a => createAlertCard(a.title, a.severity, a.details, a.time, a.affected, a.resolution, a.location, a.impact, a.actions, a.escalation)).join('');
+                 container.addEventListener('click', e => { if (e.target.classList.contains('ai-solution-btn')) document.querySelector('a[href="#operations-hub"]').click(); });
+            }
+            function populateDashboardAlerts() {
+                 const container = document.getElementById('dashboard-alerts'); if (!container) return;
+                 container.innerHTML = alertData.slice(0, 3).map(a => createAlertCard(a.title, a.severity, a.details, a.time, a.affected, a.resolution, a.location, a.impact, a.actions, a.escalation, true)).join('');
+            }
+
+            function addLogEntry(user, action, details, category = 'Operations', severity = 'Info', ip = '192.168.1.105') { 
+                auditLog.push({ timestamp: new Date(), user, action, details, category, severity, ip }); 
+                if (document.querySelector('#audit:not(.hidden)')) renderAuditLog(); 
+            }
+            function renderAuditLog() {
+                const logBody = document.getElementById('audit-log'); if (!logBody) return;
+                logBody.innerHTML = auditLog.sort((a,b) => b.timestamp - a.timestamp).map(entry => {
+                    const severityColors = { Critical: 'red', Warning: 'amber', Info: 'blue', Error: 'red' };
+                    const categoryColors = { AI: 'purple', Alert: 'red', Authentication: 'green', Operations: 'blue', Performance: 'emerald', Simulation: 'indigo', Reporting: 'gray' };
+                    return `<tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm text-gray-500">${entry.timestamp.toLocaleString()}</td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold">${entry.user}</span>
+                                <span class="text-xs text-gray-500">${entry.ip}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${categoryColors[entry.category]}-100 text-${categoryColors[entry.category]}-800">${entry.category}</span>
+                        </td>
+                        <td class="px-6 py-4 font-mono text-xs">${entry.action}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${severityColors[entry.severity]}-100 text-${severityColors[entry.severity]}-800">${entry.severity}</span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-700">${entry.details}</td>
+                    </tr>`;
+                }).join('');
+            }
+            function applyOverride() {
+                const train = DOM.overrideForm.querySelector('#override-train').value, action = DOM.overrideForm.querySelector('#override-action').value, reason = DOM.overrideForm.querySelector('#override-reason').value;
+                addLogEntry(DOM.userRoleEl.textContent, 'MANUAL_OVERRIDE', `Applied '${action}' to train ${train}. Reason: ${reason}`);
+                DOM.modal.classList.add('hidden'); DOM.overrideForm.reset();
+            }
+            
+            function drawTracks(containerId) {
+                const svgNS = "http://www.w3.org/2000/svg", svg = document.getElementById(containerId); 
+                if (!svg) return; svg.innerHTML = '';
+                
+                // Enhanced track system with multiple tracks and junctions
+                const stations = [
+                    { name: 'Delhi Central', pos: 100, platforms: 8, status: 'Normal' },
+                    { name: 'Ghaziabad', pos: 400, platforms: 6, status: 'Congested' },
+                    { name: 'Meerut', pos: 700, platforms: 4, status: 'Normal' },
+                    { name: 'Muzaffarnagar', pos: 1000, platforms: 3, status: 'Maintenance' }
+                ];
+                
+                const tracksY = [80, 120, 160, 200, 240];
+                const trackColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                
+                // Draw main tracks
+                tracksY.forEach((y, index) => {
+                    let line = document.createElementNS(svgNS, 'line');
+                    line.setAttribute('x1', 50);
+                    line.setAttribute('y1', y);
+                    line.setAttribute('x2', 1150);
+                    line.setAttribute('y2', y);
+                    line.setAttribute('stroke', trackColors[index]);
+                    line.setAttribute('stroke-width', '6');
+                    line.setAttribute('stroke-dasharray', index === 2 ? '10,5' : 'none');
+                    svg.appendChild(line);
+                });
+                
+                // Draw stations with detailed information
+                stations.forEach(s => {
+                    // Station building
+                    let rect = document.createElementNS(svgNS, 'rect');
+                    rect.setAttribute('x', s.pos - 50);
+                    rect.setAttribute('y', 40);
+                    rect.setAttribute('width', 100);
+                    rect.setAttribute('height', 220);
+                    rect.setAttribute('fill', s.status === 'Normal' ? 'rgba(34, 197, 94, 0.1)' : 
+                                      s.status === 'Congested' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)');
+                    rect.setAttribute('stroke', s.status === 'Normal' ? '#22c55e' : 
+                                     s.status === 'Congested' ? '#f59e0b' : '#ef4444');
+                    rect.setAttribute('stroke-width', '2');
+                    rect.setAttribute('rx', '8');
+                    svg.appendChild(rect);
+                    
+                    // Station name
+                    let text = document.createElementNS(svgNS, 'text');
+                    text.setAttribute('x', s.pos);
+                    text.setAttribute('y', 30);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('font-weight', 'bold');
+                    text.setAttribute('font-size', '12');
+                    text.textContent = s.name;
+                    svg.appendChild(text);
+                    
+                    // Platform indicators
+                    for (let i = 0; i < s.platforms; i++) {
+                        let platform = document.createElementNS(svgNS, 'rect');
+                        platform.setAttribute('x', s.pos - 40 + (i * 10));
+                        platform.setAttribute('y', 50);
+                        platform.setAttribute('width', '8');
+                        platform.setAttribute('height', '180');
+                        platform.setAttribute('fill', i < 3 ? '#22c55e' : '#f59e0b');
+                        platform.setAttribute('rx', '2');
+                        svg.appendChild(platform);
+                    }
+                });
+                
+                // Draw signals
+                const signals = [
+                    { pos: 200, track: 0, status: 'Green' },
+                    { pos: 350, track: 1, status: 'Red' },
+                    { pos: 600, track: 2, status: 'Yellow' },
+                    { pos: 850, track: 3, status: 'Green' }
+                ];
+                
+                signals.forEach(signal => {
+                    let signalGroup = document.createElementNS(svgNS, 'g');
+                    signalGroup.setAttribute('class', 'signal');
+                    
+                    // Signal post
+                    let post = document.createElementNS(svgNS, 'rect');
+                    post.setAttribute('x', signal.pos - 2);
+                    post.setAttribute('y', tracksY[signal.track] - 20);
+                    post.setAttribute('width', '4');
+                    post.setAttribute('height', '20');
+                    post.setAttribute('fill', '#374151');
+                    signalGroup.appendChild(post);
+                    
+                    // Signal light
+                    let light = document.createElementNS(svgNS, 'circle');
+                    light.setAttribute('cx', signal.pos);
+                    light.setAttribute('cy', tracksY[signal.track] - 15);
+                    light.setAttribute('r', '4');
+                    light.setAttribute('fill', signal.status === 'Green' ? '#22c55e' : 
+                                      signal.status === 'Red' ? '#ef4444' : '#f59e0b');
+                    light.setAttribute('stroke', '#000');
+                    light.setAttribute('stroke-width', '1');
+                    signalGroup.appendChild(light);
+                    
+                    svg.appendChild(signalGroup);
+                });
+                
+                // Draw switches/points
+                const switches = [
+                    { pos: 300, fromTrack: 0, toTrack: 1, status: 'Active' },
+                    { pos: 500, fromTrack: 1, toTrack: 2, status: 'Inactive' },
+                    { pos: 800, fromTrack: 2, toTrack: 3, status: 'Active' }
+                ];
+                
+                switches.forEach(sw => {
+                    let switchGroup = document.createElementNS(svgNS, 'g');
+                    switchGroup.setAttribute('class', 'switch');
+                    
+                    // Switch indicator
+                    let switchRect = document.createElementNS(svgNS, 'rect');
+                    switchRect.setAttribute('x', sw.pos - 5);
+                    switchRect.setAttribute('y', tracksY[sw.fromTrack] - 5);
+                    switchRect.setAttribute('width', '10');
+                    switchRect.setAttribute('height', '10');
+                    switchRect.setAttribute('fill', sw.status === 'Active' ? '#22c55e' : '#6b7280');
+                    switchRect.setAttribute('rx', '2');
+                    switchGroup.appendChild(switchRect);
+                    
+                    svg.appendChild(switchGroup);
+                });
+                
+                // Enhanced train data with more details
+                const trains = [
+                    {id: '12001', name: 'Rajdhani Express', track: 0, pos: 120, speed: 85, status: 'On Time', type: 'Express', passengers: 1200},
+                    {id: '12002', name: 'Shatabdi Express', track: 1, pos: 500, speed: 92, status: 'Delayed', type: 'Express', passengers: 800},
+                    {id: '12345', name: 'Local Passenger', track: 2, pos: 800, speed: 0, status: 'Stopped', type: 'Passenger', passengers: 450},
+                    {id: 'F001', name: 'Freight Train', track: 3, pos: 300, speed: 65, status: 'On Time', type: 'Freight', passengers: 0},
+                    {id: '12003', name: 'Duronto Express', track: 4, pos: 950, speed: 78, status: 'On Time', type: 'Express', passengers: 1100}
+                ];
+                
+                trains.forEach(t => {
+                    let g = document.createElementNS(svgNS, 'g');
+                    g.setAttribute('class', 'train');
+                    g.setAttribute('id', `${containerId}-train-${t.id}`);
+                    g.style.transform = `translateX(${t.pos}px)`;
+                    
+                    // Train body with status color
+                    let trainBody = document.createElementNS(svgNS, 'rect');
+                    trainBody.setAttribute('x', 0);
+                    trainBody.setAttribute('y', tracksY[t.track] - 12);
+                    trainBody.setAttribute('width', 50);
+                    trainBody.setAttribute('height', 24);
+                    trainBody.setAttribute('fill', t.status === 'On Time' ? '#22c55e' : 
+                                           t.status === 'Delayed' ? '#f59e0b' : '#ef4444');
+                    trainBody.setAttribute('rx', '6');
+                    trainBody.setAttribute('stroke', '#000');
+                    trainBody.setAttribute('stroke-width', '1');
+                    g.appendChild(trainBody);
+                    
+                    // Train ID
+                    let trainId = document.createElementNS(svgNS, 'text');
+                    trainId.setAttribute('x', 25);
+                    trainId.setAttribute('y', tracksY[t.track] + 2);
+                    trainId.setAttribute('fill', 'white');
+                    trainId.setAttribute('text-anchor', 'middle');
+                    trainId.setAttribute('font-size', '10');
+                    trainId.setAttribute('font-weight', 'bold');
+                    trainId.textContent = t.id;
+                    g.appendChild(trainId);
+                    
+                    // Speed indicator
+                    let speedText = document.createElementNS(svgNS, 'text');
+                    speedText.setAttribute('x', 25);
+                    speedText.setAttribute('y', tracksY[t.track] + 35);
+                    speedText.setAttribute('fill', '#374151');
+                    speedText.setAttribute('text-anchor', 'middle');
+                    speedText.setAttribute('font-size', '9');
+                    speedText.setAttribute('class', 'speed-text');
+                    speedText.textContent = `${t.speed} km/h`;
+                    g.appendChild(speedText);
+                    
+                    // Status indicator
+                    let statusDot = document.createElementNS(svgNS, 'circle');
+                    statusDot.setAttribute('cx', 45);
+                    statusDot.setAttribute('cy', tracksY[t.track] - 8);
+                    statusDot.setAttribute('r', '3');
+                    statusDot.setAttribute('fill', t.status === 'On Time' ? '#22c55e' : 
+                                           t.status === 'Delayed' ? '#f59e0b' : '#ef4444');
+                    g.appendChild(statusDot);
+                    
+                    svg.appendChild(g);
+                });
+                
+                // Add track labels
+                const trackLabels = ['Main Line 1', 'Main Line 2', 'Local Line', 'Freight Line', 'Express Line'];
+                tracksY.forEach((y, index) => {
+                    let label = document.createElementNS(svgNS, 'text');
+                    label.setAttribute('x', 20);
+                    label.setAttribute('y', y + 5);
+                    label.setAttribute('fill', '#6b7280');
+                    label.setAttribute('font-size', '10');
+                    label.textContent = trackLabels[index];
+                    svg.appendChild(label);
+                });
+            }
+
+            function drawDashboardSchematic() {
+                const container = document.getElementById('dashboard-schematic'); if (!container) return;
+                container.innerHTML = `<svg id="dashboard-track-svg" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1200 300"></svg>`;
+                drawTracks('dashboard-track-svg');
+            }
+            
+            function animateTrains() {
+                 document.querySelectorAll('.train').forEach(trainEl => {
+                     const transform = trainEl.style.transform;
+                     if (!transform) return;
+                     let currentX = parseFloat(transform.match(/-?[\d.]+/g)[0]);
+                     let newX = currentX + Math.random() * 200; if (newX > 1100) newX = 50;
+                     trainEl.style.transform = `translateX(${newX}px)`;
+                     trainEl.querySelector('.speed-text').textContent = `${Math.floor(Math.random() * 40) + 60} km/h`;
+                 });
+            }
+
+            function renderChart(canvasId, type, data, options) {
+                if (charts[canvasId]) charts[canvasId].destroy();
+                const ctx = document.getElementById(canvasId); if (!ctx) return;
+                charts[canvasId] = new Chart(ctx, { type, data, options });
+            }
+            
+            function renderReportCharts() {
+                // Punctuality by Line Chart
+                renderChart('punctualityChart', 'bar', { 
+                    labels: ['Main Line 1', 'Main Line 2', 'Local Line', 'Freight Line', 'Express Line'], 
+                    datasets: [{ 
+                        label: 'Punctuality Rate (%)', 
+                        data: [94, 89, 78, 96, 92], 
+                        backgroundColor: ['#3b82f6', '#16a34a', '#f97316', '#8b5cf6', '#ec4899'],
+                        borderColor: ['#1d4ed8', '#15803d', '#ea580c', '#7c3aed', '#db2777'],
+                        borderWidth: 2
+                    }] 
+                }, { 
+                    responsive: true, 
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: false }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, max: 100 },
+                        y: { ticks: { font: { size: 12 } } }
+                    }
+                });
+                
+                // Causes for Delay Chart
+                renderChart('delayChart', 'doughnut', { 
+                    labels: ['Signal Failure', 'Congestion', 'Weather', 'Maintenance', 'Other'], 
+                    datasets: [{ 
+                        label: 'Causes for Delay', 
+                        data: [35, 25, 20, 15, 5], 
+                        backgroundColor: ['#ef4444', '#f97316', '#3b82f6', '#6b7280', '#8b5cf6'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }] 
+                }, { 
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        title: { display: false }
+                    }
+                });
+                
+                // Performance Trends Chart
+                renderChart('trendsChart', 'line', {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [
+                        {
+                            label: 'Punctuality (%)',
+                            data: [88, 92, 89, 94, 91, 87, 90],
+                            borderColor: '#16a34a',
+                            backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Throughput (trains/hr)',
+                            data: [45, 48, 46, 52, 49, 42, 44],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                }, {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: { display: false }
+                    },
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left' },
+                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } }
+                    }
+                });
+                
+                // Station Performance Chart
+                renderChart('stationChart', 'bar', {
+                    labels: ['Delhi Central', 'Ghaziabad', 'Meerut', 'Muzaffarnagar', 'Saharanpur'],
+                    datasets: [{
+                        label: 'Platform Utilization (%)',
+                        data: [85, 78, 82, 65, 70],
+                        backgroundColor: ['#3b82f6', '#16a34a', '#f97316', '#8b5cf6', '#ec4899'],
+                        borderColor: ['#1d4ed8', '#15803d', '#ea580c', '#7c3aed', '#db2777'],
+                        borderWidth: 2
+                    }]
+                }, {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 100 }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
